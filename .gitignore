@@ -1,0 +1,15 @@
+ 
+# Folders to ignore
+/data/*
+/__pycache__/*
+/.idea/*
+
+# Files to ignore
+*.pt
+*.png
+*.npy
+*.hdf5
+*.pkl
+*.gz 
+tes*
+.directory
