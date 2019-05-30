@@ -1,7 +1,8 @@
 #============================================================
 #
-#   FIXME: PROJECT NAME
-#
+#  Pytorchtools
+#  This file contains useful classes for pytorch implementations
+#   
 #  author: Francisco Perdigon Romero
 #  email: fperdigon88@gmail.com
 #  github id: fperdigon
