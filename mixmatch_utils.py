@@ -6,32 +6,32 @@ import imgaug.augmenters as iaa
 
 def get_augmenter():
     seq = iaa.Sequential([iaa.Fliplr(0.5), # horrizontal flips
-    iaa.Crop(percent=(0, 0.1)), # random crops
+    iaa.Crop(percent=(0, 0.4)), # random crops
     # Small gaussian blur with random sigma between 0 and 0.5.
     # But we only blur about 50% of all images.
-    iaa.Sometimes(0.5,
-        iaa.GaussianBlur(sigma=(0, 0.5))
-    ),
+    # iaa.Sometimes(0.5,
+    #     iaa.GaussianBlur(sigma=(0, 0.5))
+    # ),
     # Strengthen or weaken the contrast in each image.
-    iaa.ContrastNormalization((0.75, 1.5)),
+    # iaa.ContrastNormalization((0.75, 1.5)),
     # Add gaussian noise.
     # For 50% of all images, we sample the noise once per pixel.
     # For the other 50% of all images, we sample the noise per pixel AND
     # channel. This can change the color (not only brightness) of the
     # pixels.
-    iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05*255), per_channel=0.5),
+    # iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05*255), per_channel=0.5),
     # Make some images brighter and some darker.
     # In 20% of all cases, we sample the multiplier once per channel,
     # which can end up changing the color of the images.
-    iaa.Multiply((0.8, 1.2), per_channel=0.2),
+    # iaa.Multiply((0.8, 1.2), per_channel=0.2),
     # Apply affine transformations to each image.
     # Scale/zoom them, translate/move them, rotate them and shear them.
-    iaa.Affine(
-        scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
-        translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
-        rotate=(-25, 25),
-        shear=(-8, 8)
-    )
+    # iaa.Affine(
+    #     scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
+    #     translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
+    #     rotate=(-25, 25),
+    #     shear=(-8, 8)
+    # )
     ])
     def augment(images):
         # Only works with list. Convert np to list
@@ -61,16 +61,19 @@ def mixup_mod(x1, x2, y1, y2, alpha):
 def label_guessing(model, ub, K):
     # Device configuration
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model.eval()
-    probs = []
-    for batch in ub:
-        batch = torch.from_numpy(np.asarray(batch).transpose((0, 3, 1, 2))).to(device, dtype=torch.float)
-        pr = model(batch) 
-        probs.append(pr)
 
-    sum = probs[0]
-    for i in range(1,len(probs)):
-        sum.add_(probs[i])
+    with torch.no_grad():
+        model.eval()
+        probs = []
+        for batch in ub:
+            batch = torch.from_numpy(np.asarray(batch).transpose((0, 3, 1, 2))).to(device, dtype=torch.float)
+            pr = model(batch)
+            pr = torch.softmax(pr, dim=1)
+            probs.append(pr)
+
+        sum = probs[0]
+        for i in range(1,len(probs)):
+            sum.add_(probs[i])
 
     return (sum/K).cpu().detach().numpy()
 
@@ -113,9 +116,9 @@ def mixmatch(x, y, u, model, augment_fn, T=0.5, K=2, alpha=0.75):
     X, p = mixup_mod(xb, Wx[:len(xb)], y, Wy[:len(xb)], alpha)
     U, q = mixup_mod(Ux, Wx[len(xb):], Uy, Wy[len(xb):], alpha)
     
-    # One hot decode for PyTorch labels compability
-    p = p.argmax(axis=1)
-    q = q.argmax(axis=1)
+    # # One hot decode for PyTorch labels compability
+    # p = p.argmax(axis=1)
+    # q = q.argmax(axis=1)
     return X, p, U, q
 
 
